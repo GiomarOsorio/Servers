@@ -24,6 +24,7 @@ MAX_PLAYERS=__GS_MINECRAFT_MAX_PLAYERS__
 DIFFICULTY=__GS_MINECRAFT_DIFFICULTY__
 MODE=__GS_MINECRAFT_MODE__
 MEMORY=__GS_MINECRAFT_MEMORY__
+CONNECT_TOKEN=__GS_CONNECT_TOKEN__
 
 # DST
 DST_CLUSTER_TOKEN=__GS_DST_CLUSTER_TOKEN__
@@ -41,6 +42,7 @@ ENVEOF
     sed -i "s|__GS_MINECRAFT_DIFFICULTY__|${GS_MINECRAFT_DIFFICULTY:-normal}|g" "$ENV_FILE"
     sed -i "s|__GS_MINECRAFT_MODE__|${GS_MINECRAFT_MODE:-survival}|g" "$ENV_FILE"
     sed -i "s|__GS_MINECRAFT_MEMORY__|${GS_MINECRAFT_MEMORY:-4G}|g" "$ENV_FILE"
+    sed -i "s|__GS_CONNECT_TOKEN__|${GS_CONNECT_TOKEN:-}|g" "$ENV_FILE"
     sed -i "s|__GS_DST_CLUSTER_TOKEN__|${GS_DST_CLUSTER_TOKEN:-}|g" "$ENV_FILE"
     sed -i "s|__GS_DST_CLUSTER_NAME__|${GS_DST_CLUSTER_NAME:-TurtleServer DST}|g" "$ENV_FILE"
     sed -i "s|__GS_DST_CLUSTER_PASSWORD__|${GS_DST_CLUSTER_PASSWORD:-}|g" "$ENV_FILE"
@@ -126,6 +128,14 @@ mkdir -p "$MC_CONNECT_DIR"
 cat > "$MC_CONNECT_DIR/config.yml" <<'MCEOF'
 endpoint: turtlemc
 MCEOF
+
+# Write Connect token from env
+if grep -q "CONNECT_TOKEN=" "$ENV_FILE"; then
+    MC_TOKEN=$(grep "CONNECT_TOKEN=" "$ENV_FILE" | cut -d= -f2-)
+    if [[ -n "$MC_TOKEN" ]]; then
+        printf '{"token":"%s"}' "$MC_TOKEN" > "$MC_CONNECT_DIR/token.json"
+    fi
+fi
 
 # ── Reload systemd and restart services ──────────────────────────────────────
 echo ">> Reloading systemd daemon..."
