@@ -119,29 +119,36 @@ if grep -q "DST_MAX_PLAYERS=" "$ENV_FILE"; then
     sed -i "s|^max_players = .*|max_players = ${DST_MAX}|" "$DST_CLUSTER_DIR/cluster.ini"
 fi
 
-# ── Configure Minekube Connect plugin ────────────────────────────────────────
-echo ">> Configuring Minekube Connect plugin..."
-podman volume inspect gameservers-minecraft-data >/dev/null 2>&1 || podman volume create gameservers-minecraft-data
-MC_VOLUME_PATH=$(podman volume inspect gameservers-minecraft-data --format '{{.Mountpoint}}')
-MC_CONNECT_DIR="$MC_VOLUME_PATH/plugins/connect"
-mkdir -p "$MC_CONNECT_DIR"
-cat > "$MC_CONNECT_DIR/config.yml" <<'MCEOF'
-endpoint: turtlemc
-MCEOF
-
-# Write Connect token from env
-if grep -q "CONNECT_TOKEN=" "$ENV_FILE"; then
-    MC_TOKEN=$(grep "CONNECT_TOKEN=" "$ENV_FILE" | cut -d= -f2-)
-    if [[ -n "$MC_TOKEN" ]]; then
-        printf '{"token":"%s"}' "$MC_TOKEN" > "$MC_CONNECT_DIR/token.json"
-    fi
-fi
-
 # ── Reload systemd and restart services ──────────────────────────────────────
 echo ">> Reloading systemd daemon..."
 systemctl --user daemon-reload
 
 echo ">> Starting Minecraft server..."
+systemctl --user restart gameservers-minecraft
+
+# Wait for Minecraft to fully start and plugin to generate its config
+echo ">> Waiting for Minecraft server to be ready..."
+for i in $(seq 1 60); do
+    if podman exec gameservers-minecraft test -f /data/plugins/connect/config.yml 2>/dev/null; then
+        echo ">> Minecraft server ready after ${i}s"
+        break
+    fi
+    sleep 1
+done
+
+# ── Configure Minekube Connect plugin (inside running container) ─────────────
+echo ">> Configuring Minekube Connect plugin..."
+podman exec gameservers-minecraft sed -i "s|^endpoint: .*|endpoint: turtlemc|" /data/plugins/connect/config.yml
+
+if grep -q "CONNECT_TOKEN=" "$ENV_FILE"; then
+    MC_TOKEN=$(grep "CONNECT_TOKEN=" "$ENV_FILE" | cut -d= -f2-)
+    if [[ -n "$MC_TOKEN" ]]; then
+        podman exec gameservers-minecraft sh -c "printf '{\"token\":\"%s\"}' '$MC_TOKEN' > /data/plugins/connect/token.json"
+    fi
+fi
+
+# Reload Connect plugin by restarting the server
+echo ">> Restarting Minecraft to apply Connect config..."
 systemctl --user restart gameservers-minecraft
 
 echo ">> Starting DST server..."
