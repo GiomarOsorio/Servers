@@ -1,0 +1,22 @@
+[Unit]
+Description=Don't Starve Together Dedicated Server
+After=network-online.target
+
+[Container]
+ContainerName=gameservers-dst
+Image=docker.io/jamesits/dst-server:latest
+Network=gameservers.network
+Volume=gameservers-dst-data.volume:/data:Z
+EnvironmentFile=__ENV_FILE__
+
+# DST ports: 11000 Master, 11001 Caves
+PublishPort=11000:11000/udp
+PublishPort=11001:11001/udp
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

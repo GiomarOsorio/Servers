@@ -1,0 +1,31 @@
+name: Deploy Game Servers
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    env:
+      GS_MINECRAFT_RCON_PASSWORD: ${{ secrets.GS_MINECRAFT_RCON_PASSWORD }}
+      GS_MINECRAFT_OPS: ${{ secrets.GS_MINECRAFT_OPS }}
+      GS_MINECRAFT_MOTD: ${{ secrets.GS_MINECRAFT_MOTD }}
+      GS_MINECRAFT_MAX_PLAYERS: ${{ secrets.GS_MINECRAFT_MAX_PLAYERS }}
+      GS_MINECRAFT_DIFFICULTY: ${{ secrets.GS_MINECRAFT_DIFFICULTY }}
+      GS_MINECRAFT_MODE: ${{ secrets.GS_MINECRAFT_MODE }}
+      GS_MINECRAFT_MEMORY: ${{ secrets.GS_MINECRAFT_MEMORY }}
+      GS_DST_CLUSTER_TOKEN: ${{ secrets.GS_DST_CLUSTER_TOKEN }}
+      GS_DST_CLUSTER_NAME: ${{ secrets.GS_DST_CLUSTER_NAME }}
+      GS_DST_CLUSTER_PASSWORD: ${{ secrets.GS_DST_CLUSTER_PASSWORD }}
+      GS_DST_CLUSTER_DESCRIPTION: ${{ secrets.GS_DST_CLUSTER_DESCRIPTION }}
+      GS_DST_MAX_PLAYERS: ${{ secrets.GS_DST_MAX_PLAYERS }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy game servers
+        run: bash deploy.sh

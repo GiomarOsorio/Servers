@@ -1,0 +1,50 @@
+[Unit]
+Description=Minecraft Java Edition Server
+After=network-online.target
+
+[Container]
+ContainerName=gameservers-minecraft
+Image=docker.io/itzg/minecraft-server:latest
+Network=gameservers.network
+Volume=gameservers-minecraft-data.volume:/data:Z
+EnvironmentFile=__ENV_FILE__
+
+# Game settings (defaults, overridable via env file)
+Environment=EULA=TRUE
+Environment=TYPE=VANILLA
+Environment=VERSION=LATEST
+Environment=DIFFICULTY=normal
+Environment=MODE=survival
+Environment=MAX_PLAYERS=10
+Environment=VIEW_DISTANCE=10
+Environment=ENABLE_COMMAND_BLOCK=true
+Environment=ALLOW_NETHER=true
+Environment=SPAWN_PROTECTION=0
+
+# Auto-pause when no players are connected
+Environment=ENABLE_AUTOPAUSE=TRUE
+Environment=AUTOPAUSE_TIMEOUT_EST=300
+Environment=AUTOPAUSE_TIMEOUT_INIT=600
+Environment=AUTOPAUSE_KNOCK_INTERFACE=eth0
+
+# Memory settings
+Environment=MEMORY=4G
+Environment=USE_AIKAR_FLAGS=true
+
+# Ports: 25565 game, 25575 RCON
+PublishPort=25565:25565
+PublishPort=25575:25575
+
+# RCON (remote console)
+Environment=ENABLE_RCON=true
+
+# Required for autopause iptables monitoring
+AddCapability=CAP_NET_RAW
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
