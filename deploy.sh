@@ -5,6 +5,9 @@ set -euo pipefail
 # Deploys Minecraft and DST servers via Podman Quadlets.
 # Can be run manually or via GitHub Actions (self-hosted runner).
 
+# Ensure XDG_RUNTIME_DIR for systemctl --user in CI/CD
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 QUADLET_DIR="$HOME/.config/containers/systemd"
 ENV_FILE="$HOME/gameservers.env"
