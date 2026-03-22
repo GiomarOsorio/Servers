@@ -31,8 +31,7 @@ Environment=AUTOPAUSE_KNOCK_INTERFACE=eth0
 Environment=MEMORY=4G
 Environment=USE_AIKAR_FLAGS=true
 
-# Ports: 25565 game, 25575 RCON
-PublishPort=25565:25565
+# RCON only - game port accessed via Gate proxy on the internal network
 PublishPort=25575:25575
 
 # RCON (remote console)

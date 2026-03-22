@@ -1,0 +1,19 @@
+[Unit]
+Description=Minekube Gate - Minecraft Connect Tunnel
+After=network-online.target gameservers-minecraft.service
+Requires=gameservers-minecraft.service
+
+[Container]
+ContainerName=gameservers-gate
+Image=ghcr.io/minekube/gate:latest
+Network=gameservers.network
+Volume=__DEPLOY_PATH__/config/gate/config.yml:/config.yml:Z
+EnvironmentFile=__ENV_FILE__
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target
