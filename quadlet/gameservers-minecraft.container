@@ -1,5 +1,5 @@
 [Unit]
-Description=Minecraft Java Edition Server
+Description=Minecraft Java Edition Server (Paper + Minekube Connect)
 After=network-online.target
 
 [Container]
@@ -9,10 +9,14 @@ Network=gameservers.network
 Volume=gameservers-minecraft-data.volume:/data:Z
 EnvironmentFile=__ENV_FILE__
 
-# Game settings (defaults, overridable via env file)
+# Paper server with Minekube Connect plugin
 Environment=EULA=TRUE
-Environment=TYPE=VANILLA
+Environment=TYPE=PAPER
 Environment=VERSION=LATEST
+Environment=PLUGINS=https://github.com/minekube/connect-java/releases/download/latest/connect-spigot.jar
+Environment=ENFORCE_SECURE_PROFILE=false
+
+# Game settings
 Environment=DIFFICULTY=normal
 Environment=MODE=survival
 Environment=MAX_PLAYERS=10
@@ -31,7 +35,8 @@ Environment=AUTOPAUSE_KNOCK_INTERFACE=eth0
 Environment=MEMORY=4G
 Environment=USE_AIKAR_FLAGS=true
 
-# RCON only - game port accessed via Gate proxy on the internal network
+# Ports: 25565 game (LAN), 25575 RCON
+PublishPort=25565:25565
 PublishPort=25575:25575
 
 # RCON (remote console)

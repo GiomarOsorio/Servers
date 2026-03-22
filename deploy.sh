@@ -25,9 +25,6 @@ DIFFICULTY=__GS_MINECRAFT_DIFFICULTY__
 MODE=__GS_MINECRAFT_MODE__
 MEMORY=__GS_MINECRAFT_MEMORY__
 
-# Minekube Connect
-CONNECT_TOKEN=__GS_CONNECT_TOKEN__
-
 # DST
 DST_CLUSTER_TOKEN=__GS_DST_CLUSTER_TOKEN__
 DST_CLUSTER_NAME=__GS_DST_CLUSTER_NAME__
@@ -44,7 +41,6 @@ ENVEOF
     sed -i "s|__GS_MINECRAFT_DIFFICULTY__|${GS_MINECRAFT_DIFFICULTY:-normal}|g" "$ENV_FILE"
     sed -i "s|__GS_MINECRAFT_MODE__|${GS_MINECRAFT_MODE:-survival}|g" "$ENV_FILE"
     sed -i "s|__GS_MINECRAFT_MEMORY__|${GS_MINECRAFT_MEMORY:-4G}|g" "$ENV_FILE"
-    sed -i "s|__GS_CONNECT_TOKEN__|${GS_CONNECT_TOKEN:-}|g" "$ENV_FILE"
     sed -i "s|__GS_DST_CLUSTER_TOKEN__|${GS_DST_CLUSTER_TOKEN:-}|g" "$ENV_FILE"
     sed -i "s|__GS_DST_CLUSTER_NAME__|${GS_DST_CLUSTER_NAME:-TurtleServer DST}|g" "$ENV_FILE"
     sed -i "s|__GS_DST_CLUSTER_PASSWORD__|${GS_DST_CLUSTER_PASSWORD:-}|g" "$ENV_FILE"
@@ -66,7 +62,6 @@ loginctl enable-linger "$USER" 2>/dev/null || true
 # ── Pull images ──────────────────────────────────────────────────────────────
 echo ">> Pulling game server images..."
 podman pull docker.io/itzg/minecraft-server:latest
-podman pull ghcr.io/minekube/gate:latest
 podman pull docker.io/jamesits/dst-server:latest
 
 # ── Install Quadlet files ────────────────────────────────────────────────────
@@ -122,15 +117,22 @@ if grep -q "DST_MAX_PLAYERS=" "$ENV_FILE"; then
     sed -i "s|^max_players = .*|max_players = ${DST_MAX}|" "$DST_CLUSTER_DIR/cluster.ini"
 fi
 
+# ── Configure Minekube Connect plugin ────────────────────────────────────────
+echo ">> Configuring Minekube Connect plugin..."
+podman volume inspect gameservers-minecraft-data >/dev/null 2>&1 || podman volume create gameservers-minecraft-data
+MC_VOLUME_PATH=$(podman volume inspect gameservers-minecraft-data --format '{{.Mountpoint}}')
+MC_CONNECT_DIR="$MC_VOLUME_PATH/plugins/connect"
+mkdir -p "$MC_CONNECT_DIR"
+cat > "$MC_CONNECT_DIR/config.yml" <<'MCEOF'
+endpoint: turtlemc
+MCEOF
+
 # ── Reload systemd and restart services ──────────────────────────────────────
 echo ">> Reloading systemd daemon..."
 systemctl --user daemon-reload
 
 echo ">> Starting Minecraft server..."
 systemctl --user restart gameservers-minecraft
-
-echo ">> Starting Minekube Gate tunnel..."
-systemctl --user restart gameservers-gate
 
 echo ">> Starting DST server..."
 systemctl --user restart gameservers-dst
@@ -146,11 +148,7 @@ echo "  Status:  systemctl --user status gameservers-minecraft"
 echo "  Logs:    journalctl --user -u gameservers-minecraft -f"
 echo "  RCON:    podman exec -i gameservers-minecraft rcon-cli"
 echo "  LAN:     turtleServer:25565"
-echo "  Public:  turtleserver.play.minekube.net"
-echo ""
-echo "Minekube Gate:"
-echo "  Status:  systemctl --user status gameservers-gate"
-echo "  Logs:    journalctl --user -u gameservers-gate -f"
+echo "  Public:  turtlemc.play.minekube.net"
 echo ""
 echo "DST:"
 echo "  Status:  systemctl --user status gameservers-dst"
