@@ -34,6 +34,23 @@ Manual deploy: `bash deploy.sh`
 - `GS_MINECRAFT_RCON_PASSWORD` - generate with `openssl rand -hex 16`
 - `GS_DST_CLUSTER_TOKEN` - from Klei account page
 
+## Whitelist
+
+Whitelist is enforced. To add/remove players, edit the `WHITELIST` environment variable
+in `quadlet/gameservers-minecraft.container`:
+
+```ini
+Environment=WHITELIST=Worsfestin,NewPlayer,AnotherPlayer
+```
+
+Or use RCON for immediate changes (no restart needed):
+
+```bash
+podman exec -i gameservers-minecraft rcon-cli whitelist add PlayerName
+podman exec -i gameservers-minecraft rcon-cli whitelist remove PlayerName
+podman exec -i gameservers-minecraft rcon-cli whitelist list
+```
+
 ## Ports
 
 | Service | Port | Protocol | Access |

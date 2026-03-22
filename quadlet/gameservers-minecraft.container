@@ -16,6 +16,14 @@ Environment=VERSION=LATEST
 Environment=PLUGINS=https://github.com/minekube/connect-java/releases/download/latest/connect-spigot.jar
 Environment=ENFORCE_SECURE_PROFILE=false
 
+# Server branding
+Environment=MOTD=\u00A7b\u00A7l\u2728 TurtleMC \u2728\u00A7r \u00A77- \u00A7aSurvival\n\u00A77\u00A7o  turtlemc.turtlenode.dev \u00A7e\u2764
+Environment=ICON=https://raw.githubusercontent.com/GiomarOsorio/Servers/main/assets/server-icon.png
+
+# Whitelist
+Environment=ENFORCE_WHITELIST=TRUE
+Environment=WHITELIST=Worsfestin
+
 # Game settings
 Environment=DIFFICULTY=normal
 Environment=MODE=survival
