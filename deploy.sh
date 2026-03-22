@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ── GameServers Deploy Script ────────────────────────────────────────────────
-# Deploys Minecraft and Don't Starve Together servers via Podman Quadlets.
+# Deploys Minecraft and DST servers via Podman Quadlets.
 # Can be run manually or via GitHub Actions (self-hosted runner).
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -22,7 +22,7 @@ DIFFICULTY=__GS_MINECRAFT_DIFFICULTY__
 MODE=__GS_MINECRAFT_MODE__
 MEMORY=__GS_MINECRAFT_MEMORY__
 
-# Don't Starve Together
+# DST
 DST_CLUSTER_TOKEN=__GS_DST_CLUSTER_TOKEN__
 DST_CLUSTER_NAME=__GS_DST_CLUSTER_NAME__
 DST_CLUSTER_PASSWORD=__GS_DST_CLUSTER_PASSWORD__
@@ -41,7 +41,7 @@ ENVEOF
     sed -i "s|__GS_DST_CLUSTER_TOKEN__|${GS_DST_CLUSTER_TOKEN:-}|g" "$ENV_FILE"
     sed -i "s|__GS_DST_CLUSTER_NAME__|${GS_DST_CLUSTER_NAME:-TurtleServer DST}|g" "$ENV_FILE"
     sed -i "s|__GS_DST_CLUSTER_PASSWORD__|${GS_DST_CLUSTER_PASSWORD:-}|g" "$ENV_FILE"
-    sed -i "s|__GS_DST_CLUSTER_DESCRIPTION__|${GS_DST_CLUSTER_DESCRIPTION:-Don't Starve Together on TurtleServer}|g" "$ENV_FILE"
+    sed -i "s|__GS_DST_CLUSTER_DESCRIPTION__|${GS_DST_CLUSTER_DESCRIPTION:-DST on TurtleServer}|g" "$ENV_FILE"
     sed -i "s|__GS_DST_MAX_PLAYERS__|${GS_DST_MAX_PLAYERS:-6}|g" "$ENV_FILE"
 
     chmod 600 "$ENV_FILE"
@@ -89,7 +89,7 @@ if grep -q "DST_CLUSTER_TOKEN=" "$ENV_FILE"; then
     fi
 fi
 
-# Copy config files (don't overwrite if they already exist, preserving user customizations)
+# Copy config files (preserve existing if they already exist, preserving user customizations)
 cp -n "$SCRIPT_DIR/config/dst/cluster.ini" "$DST_CLUSTER_DIR/cluster.ini" 2>/dev/null || true
 cp -n "$SCRIPT_DIR/config/dst/Master/server.ini" "$DST_CLUSTER_DIR/Master/server.ini" 2>/dev/null || true
 cp -n "$SCRIPT_DIR/config/dst/Caves/server.ini" "$DST_CLUSTER_DIR/Caves/server.ini" 2>/dev/null || true
@@ -121,7 +121,7 @@ systemctl --user daemon-reload
 echo ">> Starting Minecraft server..."
 systemctl --user restart gameservers-minecraft
 
-echo ">> Starting Don't Starve Together server..."
+echo ">> Starting DST server..."
 systemctl --user restart gameservers-dst
 
 # ── Verify ───────────────────────────────────────────────────────────────────
@@ -136,12 +136,12 @@ echo "  Logs:    journalctl --user -u gameservers-minecraft -f"
 echo "  RCON:    podman exec -i gameservers-minecraft rcon-cli"
 echo "  Connect: turtleServer:25565"
 echo ""
-echo "Don't Starve Together:"
+echo "DST:"
 echo "  Status:  systemctl --user status gameservers-dst"
 echo "  Logs:    journalctl --user -u gameservers-dst -f"
 echo "  Connect: turtleServer:11000"
 echo ""
 echo "Auto-pause:"
-echo "  Minecraft: AUTOPAUSE enabled (pauses JVM after 5min idle)"
-echo "  DST:       pause_when_empty = true (pauses world when empty)"
+echo "  Minecraft: AUTOPAUSE enabled - pauses JVM after 5min idle"
+echo "  DST:       pause_when_empty = true - pauses world when empty"
 echo ""
