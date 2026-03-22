@@ -4,7 +4,7 @@ Game servers running on turtleServer (ssh turtleServer) via Podman + Quadlet.
 
 ## Architecture
 
-- **Minecraft**: Paper server using `itzg/minecraft-server` with AUTOPAUSE + Minekube Connect plugin (public at `turtlemc.play.minekube.net`)
+- **Minecraft**: Paper server using `itzg/minecraft-server` with AUTOPAUSE + Minekube Connect plugin (public at `turtlemc.turtlenode.dev`)
 - **DST**: Using `jamesits/dst-server` with `pause_when_empty = true`
 - **Infrastructure**: Podman containers managed as systemd user services via Quadlet files
 - **CI/CD**: GitHub Actions with self-hosted runner on turtleServer
@@ -39,7 +39,7 @@ Manual deploy: `bash deploy.sh`
 | Service | Port | Protocol | Access |
 |---------|------|----------|--------|
 | Minecraft RCON | 25575 | TCP | LAN only |
-| Minecraft Game | 25565 | TCP | LAN + turtlemc.play.minekube.net |
+| Minecraft Game | 25565 | TCP | LAN + turtlemc.turtlenode.dev |
 | DST Master | 11000 | UDP | LAN |
 | DST Caves | 11001 | UDP | LAN |
 
