@@ -32,6 +32,10 @@ DST_CLUSTER_NAME=__GS_DST_CLUSTER_NAME__
 DST_CLUSTER_PASSWORD=__GS_DST_CLUSTER_PASSWORD__
 DST_CLUSTER_DESCRIPTION=__GS_DST_CLUSTER_DESCRIPTION__
 DST_MAX_PLAYERS=__GS_DST_MAX_PLAYERS__
+
+# MinIO Backup
+MINIO_ACCESS_KEY=__GS_MINIO_ACCESS_KEY__
+MINIO_SECRET_KEY=__GS_MINIO_SECRET_KEY__
 ENVEOF
 
     # Substitute placeholders with actual values (with defaults)
@@ -48,6 +52,8 @@ ENVEOF
     sed -i "s|__GS_DST_CLUSTER_PASSWORD__|${GS_DST_CLUSTER_PASSWORD:-}|g" "$ENV_FILE"
     sed -i "s|__GS_DST_CLUSTER_DESCRIPTION__|${GS_DST_CLUSTER_DESCRIPTION:-DST on TurtleServer}|g" "$ENV_FILE"
     sed -i "s|__GS_DST_MAX_PLAYERS__|${GS_DST_MAX_PLAYERS:-6}|g" "$ENV_FILE"
+    sed -i "s|__GS_MINIO_ACCESS_KEY__|${GS_MINIO_ACCESS_KEY:-}|g" "$ENV_FILE"
+    sed -i "s|__GS_MINIO_SECRET_KEY__|${GS_MINIO_SECRET_KEY:-}|g" "$ENV_FILE"
 
     chmod 600 "$ENV_FILE"
 elif [[ -f "$ENV_FILE" ]]; then
@@ -60,6 +66,22 @@ fi
 
 # ── Enable linger for user-level systemd services ────────────────────────────
 loginctl enable-linger "$USER" 2>/dev/null || true
+
+# ── Install mc CLI for backups ───────────────────────────────────────────────
+if ! command -v mc &>/dev/null; then
+    echo ">> Installing MinIO mc CLI..."
+    curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o "$HOME/.local/bin/mc"
+    chmod +x "$HOME/.local/bin/mc"
+fi
+
+# Configure MinIO alias
+if grep -q "MINIO_ACCESS_KEY=" "$ENV_FILE" 2>/dev/null; then
+    MINIO_AK=$(grep "MINIO_ACCESS_KEY=" "$ENV_FILE" | cut -d= -f2-)
+    MINIO_SK=$(grep "MINIO_SECRET_KEY=" "$ENV_FILE" | cut -d= -f2-)
+    if [[ -n "$MINIO_AK" && -n "$MINIO_SK" ]]; then
+        mc alias set storage "${GS_MINIO_URL:-http://192.168.8.189:9000}" "$MINIO_AK" "$MINIO_SK" 2>/dev/null || true
+    fi
+fi
 
 # ── Pull images ──────────────────────────────────────────────────────────────
 echo ">> Pulling game server images..."
@@ -154,6 +176,16 @@ systemctl --user restart gameservers-minecraft
 echo ">> Starting DST server..."
 systemctl --user restart gameservers-dst
 
+# ── Install backup timer ─────────────────────────────────────────────────────
+echo ">> Installing daily backup timer..."
+SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
+mkdir -p "$SYSTEMD_USER_DIR"
+cp "$SCRIPT_DIR/systemd/gameservers-backup.service" "$SYSTEMD_USER_DIR/"
+cp "$SCRIPT_DIR/systemd/gameservers-backup.timer" "$SYSTEMD_USER_DIR/"
+sed -i "s|%h/Servers|${SCRIPT_DIR}|g" "$SYSTEMD_USER_DIR/gameservers-backup.service"
+systemctl --user daemon-reload
+systemctl --user enable --now gameservers-backup.timer
+
 # ── Verify ───────────────────────────────────────────────────────────────────
 echo ""
 echo "========================================="
@@ -172,7 +204,8 @@ echo "  Status:  systemctl --user status gameservers-dst"
 echo "  Logs:    journalctl --user -u gameservers-dst -f"
 echo "  Connect: turtleServer:11000"
 echo ""
-echo "Auto-pause:"
-echo "  Minecraft: AUTOPAUSE enabled - pauses JVM after 5min idle"
-echo "  DST:       pause_when_empty = true - pauses world when empty"
+echo "Backups:"
+echo "  Daily at 4:00 AM UTC to MinIO on turtleStorage"
+echo "  Manual: bash scripts/backup.sh"
+echo "  Timer:  systemctl --user status gameservers-backup.timer"
 echo ""

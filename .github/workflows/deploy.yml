@@ -23,6 +23,8 @@ jobs:
       GS_DST_CLUSTER_PASSWORD: ${{ secrets.GS_DST_CLUSTER_PASSWORD }}
       GS_DST_CLUSTER_DESCRIPTION: ${{ secrets.GS_DST_CLUSTER_DESCRIPTION }}
       GS_DST_MAX_PLAYERS: ${{ secrets.GS_DST_MAX_PLAYERS }}
+      GS_MINIO_ACCESS_KEY: ${{ secrets.GS_MINIO_ACCESS_KEY }}
+      GS_MINIO_SECRET_KEY: ${{ secrets.GS_MINIO_SECRET_KEY }}
 
     steps:
       - name: Checkout code
