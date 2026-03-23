@@ -32,6 +32,7 @@ Environment=VIEW_DISTANCE=10
 Environment=ENABLE_COMMAND_BLOCK=true
 Environment=ALLOW_NETHER=true
 Environment=SPAWN_PROTECTION=0
+Environment=PAUSE_WHEN_EMPTY_SECONDS=60
 
 # Memory settings
 Environment=MEMORY=4G
