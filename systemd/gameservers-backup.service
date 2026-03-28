@@ -1,7 +1,0 @@
-[Unit]
-Description=GameServers Daily Backup to MinIO
-
-[Service]
-Type=oneshot
-ExecStart=%h/Servers/scripts/backup.sh
-EnvironmentFile=%h/gameservers.env

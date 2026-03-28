@@ -1,0 +1,39 @@
+[Unit]
+Description=Minecraft Backup Sidecar (itzg/mc-backup)
+After=gameservers-minecraft.service
+Requires=gameservers-minecraft.service
+
+[Container]
+ContainerName=gameservers-mc-backup
+Image=docker.io/itzg/mc-backup:latest
+Network=gameservers.network
+Volume=gameservers-minecraft-data.volume:/data:ro
+EnvironmentFile=__ENV_FILE__
+
+# Backup method: restic to MinIO (S3-compatible)
+Environment=BACKUP_METHOD=restic
+Environment=RESTIC_REPOSITORY=s3:http://192.168.8.189:9000/gameservers-backups/minecraft
+Environment=RESTIC_PASSWORD=gameservers-restic
+Environment=RESTIC_HOSTNAME=turtleserver-minecraft
+
+# Schedule: daily at 4:00 AM UTC
+Environment=CRON_SCHEDULE=0 4 * * *
+Environment=BACKUP_ON_STARTUP=false
+Environment=INITIAL_DELAY=0
+
+# RCON: coordinate save-off/save-all/save-on
+Environment=RCON_HOST=gameservers-minecraft
+Environment=RCON_PORT=25575
+
+# Retention: keep 7 daily, 4 weekly
+Environment=PRUNE_RESTIC_RETENTION=--keep-daily 7 --keep-weekly 4
+
+# Exclude unnecessary files
+Environment=EXCLUDES=*.jar,cache,logs,*.tmp,libraries,versions
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

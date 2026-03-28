@@ -33,9 +33,9 @@ DST_CLUSTER_PASSWORD=__GS_DST_CLUSTER_PASSWORD__
 DST_CLUSTER_DESCRIPTION=__GS_DST_CLUSTER_DESCRIPTION__
 DST_MAX_PLAYERS=__GS_DST_MAX_PLAYERS__
 
-# MinIO Backup
-MINIO_ACCESS_KEY=__GS_MINIO_ACCESS_KEY__
-MINIO_SECRET_KEY=__GS_MINIO_SECRET_KEY__
+# MinIO Backup (restic uses AWS_* vars for S3)
+AWS_ACCESS_KEY_ID=__GS_MINIO_ACCESS_KEY__
+AWS_SECRET_ACCESS_KEY=__GS_MINIO_SECRET_KEY__
 ENVEOF
 
     # Substitute placeholders with actual values (with defaults)
@@ -52,8 +52,8 @@ ENVEOF
     sed -i "s|__GS_DST_CLUSTER_PASSWORD__|${GS_DST_CLUSTER_PASSWORD:-}|g" "$ENV_FILE"
     sed -i "s|__GS_DST_CLUSTER_DESCRIPTION__|${GS_DST_CLUSTER_DESCRIPTION:-DST on TurtleServer}|g" "$ENV_FILE"
     sed -i "s|__GS_DST_MAX_PLAYERS__|${GS_DST_MAX_PLAYERS:-6}|g" "$ENV_FILE"
-    sed -i "s|__GS_MINIO_ACCESS_KEY__|${GS_MINIO_ACCESS_KEY:-}|g" "$ENV_FILE"
-    sed -i "s|__GS_MINIO_SECRET_KEY__|${GS_MINIO_SECRET_KEY:-}|g" "$ENV_FILE"
+    sed -i "s|__GS_MINIO_ACCESS_KEY__|${GS_MINIO_ACCESS_KEY:-minioadmin}|g" "$ENV_FILE"
+    sed -i "s|__GS_MINIO_SECRET_KEY__|${GS_MINIO_SECRET_KEY:-minioadmin}|g" "$ENV_FILE"
 
     chmod 600 "$ENV_FILE"
 elif [[ -f "$ENV_FILE" ]]; then
@@ -67,25 +67,10 @@ fi
 # ── Enable linger for user-level systemd services ────────────────────────────
 loginctl enable-linger "$USER" 2>/dev/null || true
 
-# ── Install mc CLI for backups ───────────────────────────────────────────────
-if ! command -v mc &>/dev/null; then
-    echo ">> Installing MinIO mc CLI..."
-    curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o "$HOME/.local/bin/mc"
-    chmod +x "$HOME/.local/bin/mc"
-fi
-
-# Configure MinIO alias
-if grep -q "MINIO_ACCESS_KEY=" "$ENV_FILE" 2>/dev/null; then
-    MINIO_AK=$(grep "MINIO_ACCESS_KEY=" "$ENV_FILE" | cut -d= -f2-)
-    MINIO_SK=$(grep "MINIO_SECRET_KEY=" "$ENV_FILE" | cut -d= -f2-)
-    if [[ -n "$MINIO_AK" && -n "$MINIO_SK" ]]; then
-        mc alias set storage "${GS_MINIO_URL:-http://192.168.8.189:9000}" "$MINIO_AK" "$MINIO_SK" 2>/dev/null || true
-    fi
-fi
-
 # ── Pull images ──────────────────────────────────────────────────────────────
 echo ">> Pulling game server images..."
 podman pull docker.io/itzg/minecraft-server:latest
+podman pull docker.io/itzg/mc-backup:latest
 podman pull docker.io/jamesits/dst-server:latest
 
 # ── Install Quadlet files ────────────────────────────────────────────────────
@@ -173,18 +158,11 @@ fi
 echo ">> Restarting Minecraft to apply Connect config..."
 systemctl --user restart gameservers-minecraft
 
+echo ">> Starting Minecraft backup sidecar..."
+systemctl --user restart gameservers-mc-backup
+
 echo ">> Starting DST server..."
 systemctl --user restart gameservers-dst
-
-# ── Install backup timer ─────────────────────────────────────────────────────
-echo ">> Installing daily backup timer..."
-SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
-mkdir -p "$SYSTEMD_USER_DIR"
-cp "$SCRIPT_DIR/systemd/gameservers-backup.service" "$SYSTEMD_USER_DIR/"
-cp "$SCRIPT_DIR/systemd/gameservers-backup.timer" "$SYSTEMD_USER_DIR/"
-sed -i "s|%h/Servers|${SCRIPT_DIR}|g" "$SYSTEMD_USER_DIR/gameservers-backup.service"
-systemctl --user daemon-reload
-systemctl --user enable --now gameservers-backup.timer
 
 # ── Verify ───────────────────────────────────────────────────────────────────
 echo ""
@@ -205,7 +183,7 @@ echo "  Logs:    journalctl --user -u gameservers-dst -f"
 echo "  Connect: turtleServer:11000"
 echo ""
 echo "Backups:"
+echo "  Sidecar: systemctl --user status gameservers-mc-backup"
 echo "  Daily at 4:00 AM UTC to MinIO on turtleStorage"
-echo "  Manual: bash scripts/backup.sh"
-echo "  Timer:  systemctl --user status gameservers-backup.timer"
+echo "  Manual: podman exec gameservers-mc-backup backup now"
 echo ""
